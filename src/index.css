@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: theme('fontFamily.body');
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #0d0d14;
+  color: #e5e7eb;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-heading {
+  font-family: theme('fontFamily.heading');
+}
+
