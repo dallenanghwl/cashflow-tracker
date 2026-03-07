@@ -143,6 +143,32 @@ export function AppProvider({ children }) {
     }
   }
 
+  const updateRecurring = async (id, payload) => {
+    const prevRow = recurring.find((r) => r.id === id)
+    setRecurring((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...payload } : r)),
+    )
+    showToast('Recurring updated')
+    const { error: err } = await supabase
+      .from('recurring')
+      .update({
+        payee: payload.payee,
+        amount: payload.amount,
+        category: payload.category ?? null,
+        frequency: payload.frequency,
+        start_date: payload.start_date,
+        end_date: payload.end_date ?? null,
+        day_of_month: payload.day_of_month ?? null,
+        notes: payload.notes ?? null,
+      })
+      .eq('id', id)
+    if (err) {
+      console.error(err)
+      setRecurring((prev) => prev.map((r) => (r.id === id ? prevRow : r)))
+      showToast('Could not update recurring')
+    }
+  }
+
   const deleteRecurring = async (id) => {
     const prev = recurring
     setRecurring((r) => r.filter((x) => x.id !== id))
@@ -167,6 +193,23 @@ export function AppProvider({ children }) {
     }
   }
 
+  const updatePayment = async (id, payload) => {
+    const prev = payments
+    setPayments((list) =>
+      list.map((p) => (p.id === id ? { ...p, ...payload } : p)),
+    )
+    showToast('Payment updated')
+    const { error: err } = await supabase
+      .from('payments')
+      .update(payload)
+      .eq('id', id)
+    if (err) {
+      console.error(err)
+      setPayments(prev)
+      showToast('Could not update payment')
+    }
+  }
+
   const deletePayment = async (id) => {
     const prev = payments
     setPayments((list) => list.filter((p) => p.id !== id))
@@ -176,6 +219,35 @@ export function AppProvider({ children }) {
       console.error(err)
       setPayments(prev)
       showToast('Could not delete payment')
+    }
+  }
+
+  const updateInflow = async (id, payload) => {
+    const prev = inflows
+    setInflows((list) =>
+      list.map((p) => (p.id === id ? { ...p, ...payload } : p)),
+    )
+    showToast('Inflow updated')
+    const { error: err } = await supabase
+      .from('inflows')
+      .update(payload)
+      .eq('id', id)
+    if (err) {
+      console.error(err)
+      setInflows(prev)
+      showToast('Could not update inflow')
+    }
+  }
+
+  const deleteInflow = async (id) => {
+    const prev = inflows
+    setInflows((list) => list.filter((p) => p.id !== id))
+    showToast('Inflow deleted')
+    const { error: err } = await supabase.from('inflows').delete().eq('id', id)
+    if (err) {
+      console.error(err)
+      setInflows(prev)
+      showToast('Could not delete inflow')
     }
   }
 
@@ -237,11 +309,15 @@ export function AppProvider({ children }) {
     addPayment,
     addInflow,
     addRecurring,
+    updateRecurring,
     toggleRecurringActive,
     deleteRecurring,
     markPaymentPaid,
+    updatePayment,
     deletePayment,
     markInflowReceived,
+    updateInflow,
+    deleteInflow,
     saveOpeningBalance,
     reload: loadAll,
     toast,

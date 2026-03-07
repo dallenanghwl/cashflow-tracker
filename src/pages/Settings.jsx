@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppContext } from '../context/AppContext.jsx'
 
 export function Settings() {
   const { openingBalance, saveOpeningBalance } = useAppContext()
   const [value, setValue] = useState(openingBalance.toString())
+
+  useEffect(() => {
+    setValue(openingBalance.toString())
+  }, [openingBalance])
   const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (e) => {

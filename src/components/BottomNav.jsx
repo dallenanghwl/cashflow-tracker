@@ -3,7 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom'
 const tabs = [
   { to: '/', label: 'Overview' },
   { to: '/add-payment', label: '+ Payment' },
-  { to: '/add-inflow', label: '+ Receive' },
   { to: '/recurring', label: 'Recurring' },
   { to: '/history', label: 'More' },
 ]

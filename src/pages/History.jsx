@@ -5,8 +5,53 @@ import { PaymentCard } from '../components/PaymentCard.jsx'
 const TABS = ['All', 'Pending', 'Paid', 'Inflows']
 
 export function History() {
-  const { payments, inflows } = useAppContext()
+  const {
+    payments,
+    inflows,
+    updatePayment,
+    deletePayment,
+    updateInflow,
+    deleteInflow,
+  } = useAppContext()
   const [tab, setTab] = useState('All')
+  const [editing, setEditing] = useState(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editName, setEditName] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  const openEdit = (item) => {
+    setEditing(item)
+    setEditAmount(String(item.amount ?? ''))
+    setEditDate(item.due_date || item.expected_date || '')
+    setEditName(item.type === 'inflow' ? (item.description || '') : (item.payee || ''))
+    setEditCategory(item.category || '')
+  }
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault()
+    if (!editing) return
+    setEditSubmitting(true)
+    if (editing.type === 'payment') {
+      await updatePayment(editing.id, {
+        amount: Number(editAmount),
+        due_date: editDate,
+        invoice_date: editDate,
+        payee: editName,
+        category: editCategory || null,
+      })
+    } else {
+      await updateInflow(editing.id, {
+        amount: Number(editAmount),
+        expected_date: editDate,
+        description: editName,
+        category: editCategory || null,
+      })
+    }
+    setEditing(null)
+    setEditSubmitting(false)
+  }
 
   const items = useMemo(() => {
     const paymentItems = payments.map((p) => ({
@@ -80,9 +125,89 @@ export function History() {
                   month: 'short',
                 })}
               </div>
-              <PaymentCard payment={item} asInflow={item.type === 'inflow'} />
+              <PaymentCard
+                payment={item}
+                asInflow={item.type === 'inflow'}
+                showHistoryActions
+                onEdit={() => openEdit(item)}
+                onDelete={
+                  item.type === 'payment'
+                    ? () => deletePayment(item.id)
+                    : () => deleteInflow(item.id)
+                }
+              />
             </div>
           ))}
+        </div>
+      )}
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h2 className="font-heading text-lg mb-2">
+              Edit {editing.type === 'inflow' ? 'inflow' : 'payment'}
+            </h2>
+            <form onSubmit={handleSaveEdit} className="space-y-3">
+              <div>
+                <label className="block text-sm mb-1">Amount</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  className="w-full rounded-2xl bg-slate-800 border border-slate-700 px-3 py-3 text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Date</label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full rounded-2xl bg-slate-800 border border-slate-700 px-3 py-3 text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">
+                  {editing.type === 'inflow' ? 'Description' : 'Payee name'}
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full rounded-2xl bg-slate-800 border border-slate-700 px-3 py-3 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Category</label>
+                <input
+                  type="text"
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  className="w-full rounded-2xl bg-slate-800 border border-slate-700 px-3 py-3 text-sm"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="flex-1 min-h-[48px] rounded-2xl border border-slate-600 text-slate-200 text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="flex-1 min-h-[48px] rounded-2xl bg-accent text-slate-950 font-semibold text-sm"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

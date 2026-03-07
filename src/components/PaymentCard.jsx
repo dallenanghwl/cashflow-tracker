@@ -24,7 +24,13 @@ function friendlyDateLabel(dateStr) {
   return `${abs} days overdue`
 }
 
-export function PaymentCard({ payment, asInflow = false }) {
+export function PaymentCard({
+  payment,
+  asInflow = false,
+  onEdit,
+  onDelete,
+  showHistoryActions = false,
+}) {
   const { markPaymentPaid, deletePayment, markInflowReceived } = useAppContext()
 
   const label = useMemo(() => friendlyDateLabel(payment.due_date || payment.expected_date), [payment])
@@ -39,8 +45,8 @@ export function PaymentCard({ payment, asInflow = false }) {
   }
 
   const handleDelete = () => {
-    if (asInflow) return
-    deletePayment(payment.id)
+    if (onDelete) onDelete()
+    else if (!asInflow) deletePayment(payment.id)
   }
 
   return (
@@ -83,27 +89,52 @@ export function PaymentCard({ payment, asInflow = false }) {
         </p>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={handlePrimary}
-          disabled={isPaid}
-          className={`flex-1 min-h-[48px] rounded-2xl text-sm font-semibold ${
-            isPaid
-              ? 'bg-slate-700 text-slate-300 cursor-default'
-              : 'bg-emerald-500 text-slate-950 active:scale-[0.99]'
-          }`}
-        >
-          {asInflow ? '✓ Mark as received' : '✓ Mark as paid'}
-        </button>
-        {!asInflow && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="min-w-[80px] min-h-[48px] rounded-2xl border border-slate-700 text-xs text-slate-200"
-          >
-            Delete
-          </button>
+      <div className="mt-3 flex gap-2 flex-wrap">
+        {showHistoryActions ? (
+          <>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="min-h-[48px] rounded-2xl border border-slate-600 text-slate-200 text-sm font-semibold px-4"
+              >
+                Edit
+              </button>
+            )}
+            {(onDelete || !asInflow) && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="min-h-[48px] rounded-2xl border border-slate-700 text-xs text-slate-200 px-4"
+              >
+                Delete
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handlePrimary}
+              disabled={isPaid}
+              className={`flex-1 min-h-[48px] rounded-2xl text-sm font-semibold ${
+                isPaid
+                  ? 'bg-slate-700 text-slate-300 cursor-default'
+                  : 'bg-emerald-500 text-slate-950 active:scale-[0.99]'
+              }`}
+            >
+              {asInflow ? '✓ Mark as received' : '✓ Mark as paid'}
+            </button>
+            {(onDelete || !asInflow) && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="min-w-[80px] min-h-[48px] rounded-2xl border border-slate-700 text-xs text-slate-200"
+              >
+                Delete
+              </button>
+            )}
+          </>
         )}
       </div>
     </article>

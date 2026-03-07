@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext.jsx'
 
 const FREQUENCIES = ['Weekly', 'Fortnightly', 'Monthly', 'Quarterly', 'Yearly']
 
 export function AddRecurring() {
   const navigate = useNavigate()
-  const { addRecurring } = useAppContext()
+  const { id: editId } = useParams()
+  const { addRecurring, updateRecurring, recurring } = useAppContext()
   const today = new Date().toISOString().slice(0, 10)
 
   const [payee, setPayee] = useState('')
@@ -19,14 +20,32 @@ export function AddRecurring() {
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const isEdit = Boolean(editId)
+  const existing = isEdit ? recurring.find((r) => r.id === editId) : null
+
+  useEffect(() => {
+    if (!editId || !recurring.length) return
+    const rec = recurring.find((r) => r.id === editId)
+    if (rec) {
+      setPayee(rec.payee || '')
+      setAmount(String(rec.amount ?? ''))
+      setFrequency(rec.frequency || 'Monthly')
+      setDayOfMonth(rec.day_of_month ? String(rec.day_of_month) : '1')
+      setStartDate(rec.start_date || today)
+      setEndDate(rec.end_date || '')
+      setCategory(rec.category || '')
+      setNotes(rec.notes || '')
+    }
+  }, [editId, recurring])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!payee || !amount || !frequency || !startDate) return
     setSubmitting(true)
-    await addRecurring({
+    const payload = {
       payee,
       amount: Number(amount),
-      category,
+      category: category || null,
       frequency,
       start_date: startDate,
       end_date: endDate || null,
@@ -34,9 +53,13 @@ export function AddRecurring() {
         ['Monthly', 'Quarterly', 'Yearly'].includes(frequency) && dayOfMonth
           ? Number(dayOfMonth)
           : null,
-      notes,
-      active: true,
-    })
+      notes: notes || null,
+    }
+    if (isEdit) {
+      await updateRecurring(editId, payload)
+    } else {
+      await addRecurring({ ...payload, active: true })
+    }
     navigate('/recurring')
   }
 
@@ -44,9 +67,13 @@ export function AddRecurring() {
 
   return (
     <div>
-      <h1 className="font-heading text-2xl mb-1">Add recurring payment</h1>
+      <h1 className="font-heading text-2xl mb-1">
+        {isEdit ? 'Edit recurring payment' : 'Add recurring payment'}
+      </h1>
       <p className="text-sm text-slate-300 mb-4">
-        Set up regular payments like rent, software, or wages.
+        {isEdit
+          ? 'Update the details below.'
+          : 'Set up regular payments like rent, software, or wages.'}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -156,7 +183,7 @@ export function AddRecurring() {
           disabled={submitting}
           className="w-full min-h-[48px] rounded-2xl bg-accent text-slate-950 font-semibold text-sm mt-2"
         >
-          Save recurring payment
+          {isEdit ? 'Update recurring payment' : 'Save recurring payment'}
         </button>
       </form>
     </div>

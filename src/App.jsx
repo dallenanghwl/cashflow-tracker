@@ -2,7 +2,6 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Overview } from './pages/Overview.jsx'
 import { AddPayment } from './pages/AddPayment.jsx'
-import { AddInflow } from './pages/AddInflow.jsx'
 import { AddRecurring } from './pages/AddRecurring.jsx'
 import { ManageRecurring } from './pages/ManageRecurring.jsx'
 import { History } from './pages/History.jsx'
@@ -40,8 +39,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Overview />} />
         <Route path="/add-payment" element={<AddPayment />} />
-        <Route path="/add-inflow" element={<AddInflow />} />
         <Route path="/add-recurring" element={<AddRecurring />} />
+        <Route path="/edit-recurring/:id" element={<AddRecurring />} />
         <Route path="/recurring" element={<ManageRecurring />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />

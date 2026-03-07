@@ -89,6 +89,12 @@ export function ManageRecurring() {
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2">
+                  <Link
+                    to={`/edit-recurring/${r.id}`}
+                    className="min-w-[80px] min-h-[48px] rounded-2xl border border-slate-600 text-slate-200 text-xs font-semibold flex items-center justify-center"
+                  >
+                    Edit
+                  </Link>
                   <button
                     type="button"
                     onClick={() => toggleRecurringActive(r.id, !active)}
