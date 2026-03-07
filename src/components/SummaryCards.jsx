@@ -11,7 +11,7 @@ function withinDays(dateStr, days) {
 }
 
 export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
-  const { openingBalance, payments, inflows, allOutflows, horizonDays } = useAppContext()
+  const { openingBalance, currentBalance, payments, inflows, allOutflows, horizonDays } = useAppContext()
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const { outScope, inScope, endBalance } = useMemo(() => {
@@ -42,7 +42,7 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
       .reduce((sum, i) => sum + Number(i.amount || 0), 0)
 
     const endBalance =
-      openingBalance -
+      currentBalance -
       allOutflows
         .filter((p) => p.status !== 'Paid' && withinDays(p.due_date, horizonDays))
         .reduce((sum, p) => sum + Number(p.amount || 0), 0) +
@@ -85,14 +85,16 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
         to="/settings"
         className="rounded-2xl bg-card px-4 py-4 border border-slate-800 block col-span-2 focus:outline-none focus:ring-2 focus:ring-accent/50"
       >
-        <p className="text-xs text-slate-300 mb-1">Money you have now</p>
-        <p className="font-heading text-4xl tracking-tight">{format(openingBalance)}</p>
-        <p className="text-[11px] text-slate-400 mt-1.5">Tap to update</p>
+        <p className="text-xs text-slate-300 mb-1">Current Balance (calculated)</p>
+        <p className="font-heading text-4xl tracking-tight">{format(currentBalance)}</p>
+        <p className="text-[11px] text-slate-400 mt-1.5">
+          Updates when you mark paid or add cash sales. Tap to change opening balance in Settings.
+        </p>
       </Link>
       <article className="rounded-2xl bg-card px-4 py-3 border border-slate-800">
         <p className="text-xs text-slate-300 mb-1">{scopeBalanceLabel}</p>
         <p className="font-heading text-2xl">
-          {format(openingBalance - outScope + inScope)}
+          {format(currentBalance - outScope + inScope)}
         </p>
       </article>
       <article className="rounded-2xl bg-card px-4 py-3 border border-slate-800">

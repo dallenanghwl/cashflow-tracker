@@ -45,7 +45,18 @@ Save the variables; Vercel will automatically use them on the next build.
 2. Use the browser menu to **Add to Home Screen**.
 3. Launch the app from your home screen for a full-screen PWA experience.
 
-### 6. Changing env vars later
+### 6. Supabase schema (payments)
+
+If you use the payment instruction status feature, add a column to the `payments` table in Supabase:
+
+- **Column:** `instruction_sent`  
+- **Type:** `boolean`  
+- **Default:** `false`
+
+In the Supabase SQL editor:  
+`ALTER TABLE payments ADD COLUMN IF NOT EXISTS instruction_sent boolean DEFAULT false;`
+
+### 7. Changing env vars later
 
 If you rotate your Supabase keys or change projects:
 

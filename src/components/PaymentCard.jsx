@@ -24,6 +24,44 @@ function friendlyDateLabel(dateStr) {
   return `${abs} days overdue`
 }
 
+function PaymentStatusBadge({ payment, asInflow }) {
+  if (asInflow) {
+    const received = payment.status === 'Received'
+    return (
+      <span
+        className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
+          received ? 'bg-emerald-900/80 text-emerald-100' : 'bg-slate-700 text-slate-200'
+        }`}
+      >
+        {received ? '🟢 Received' : 'Pending'}
+      </span>
+    )
+  }
+
+  const isPaid = payment.status === 'Paid'
+  const instructionSent = payment.instruction_sent === true
+
+  if (isPaid) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-100">
+        🟢 Paid
+      </span>
+    )
+  }
+  if (instructionSent) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-indigo-900/80 text-indigo-100">
+        🔵 Instruction sent
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-900/80 text-amber-100">
+      🔴 Instruction not sent
+    </span>
+  )
+}
+
 export function PaymentCard({
   payment,
   asInflow = false,
@@ -31,23 +69,39 @@ export function PaymentCard({
   onDelete,
   showHistoryActions = false,
 }) {
-  const { markPaymentPaid, deletePayment, markInflowReceived } = useAppContext()
+  const {
+    markPaymentPaid,
+    markInstructionSent,
+    deletePayment,
+    markInflowReceived,
+  } = useAppContext()
 
-  const label = useMemo(() => friendlyDateLabel(payment.due_date || payment.expected_date), [payment])
+  const label = useMemo(
+    () => friendlyDateLabel(payment.due_date || payment.expected_date),
+    [payment],
+  )
 
   const amount = Number(payment.amount || 0)
   const isPaid = payment.status === 'Paid' || payment.status === 'Received'
+  const isVirtual = payment.virtual === true
 
-  const handlePrimary = () => {
+  const handleMarkPaid = () => {
     if (isPaid) return
     if (asInflow) markInflowReceived(payment.id)
     else markPaymentPaid(payment.id)
   }
 
+  const handleMarkInstructionSent = () => {
+    if (!isVirtual) markInstructionSent(payment.id)
+  }
+
   const handleDelete = () => {
     if (onDelete) onDelete()
-    else if (!asInflow) deletePayment(payment.id)
+    else if (!asInflow && !isVirtual) deletePayment(payment.id)
   }
+
+  const showInstructionButton =
+    !asInflow && !isPaid && !isVirtual && payment.instruction_sent !== true
 
   return (
     <article className="rounded-2xl bg-card border border-slate-800 px-4 py-3 mb-3">
@@ -68,11 +122,7 @@ export function PaymentCard({
                 ↻ Recurring
               </span>
             )}
-            {isPaid && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-100">
-                {asInflow ? 'Received' : 'Paid'}
-              </span>
-            )}
+            <PaymentStatusBadge payment={payment} asInflow={asInflow} />
           </div>
         </div>
         <p
@@ -101,7 +151,7 @@ export function PaymentCard({
                 Edit
               </button>
             )}
-            {(onDelete || !asInflow) && (
+            {(onDelete || (!asInflow && !isVirtual)) && (
               <button
                 type="button"
                 onClick={handleDelete}
@@ -111,11 +161,11 @@ export function PaymentCard({
               </button>
             )}
           </>
-        ) : (
+        ) : asInflow ? (
           <>
             <button
               type="button"
-              onClick={handlePrimary}
+              onClick={handleMarkPaid}
               disabled={isPaid}
               className={`flex-1 min-h-[48px] rounded-2xl text-sm font-semibold ${
                 isPaid
@@ -123,9 +173,32 @@ export function PaymentCard({
                   : 'bg-emerald-500 text-slate-950 active:scale-[0.99]'
               }`}
             >
-              {asInflow ? '✓ Mark as received' : '✓ Mark as paid'}
+              ✓ Mark as received
             </button>
-            {(onDelete || !asInflow) && (
+          </>
+        ) : (
+          <>
+            {!isPaid && (
+              <>
+                {showInstructionButton && (
+                  <button
+                    type="button"
+                    onClick={handleMarkInstructionSent}
+                    className="min-h-[48px] rounded-2xl bg-slate-700 text-slate-100 text-sm font-semibold px-4 border border-slate-600"
+                  >
+                    Mark instruction sent
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleMarkPaid}
+                  className="flex-1 min-h-[48px] rounded-2xl bg-emerald-500 text-slate-950 text-sm font-semibold active:scale-[0.99]"
+                >
+                  Mark as paid
+                </button>
+              </>
+            )}
+            {!isVirtual && (
               <button
                 type="button"
                 onClick={handleDelete}
@@ -140,4 +213,3 @@ export function PaymentCard({
     </article>
   )
 }
-

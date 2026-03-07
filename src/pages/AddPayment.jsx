@@ -2,43 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext.jsx'
 
-const TERMS = [
-  'COD',
-  'Net 7',
-  'Net 14',
-  'Net 30',
-  'Net 45',
-  'Net 60',
-  'Custom days',
+const CATEGORIES = [
+  'Bills',
+  'Rent',
+  'Supplies',
+  'Software',
+  'Wages',
+  'Marketing',
+  'Other',
 ]
-
-function addDays(date, days) {
-  const d = new Date(date)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-function calculateDueDate(invoiceDate, terms, customDays) {
-  if (!invoiceDate) return ''
-  switch (terms) {
-    case 'COD':
-      return invoiceDate
-    case 'Net 7':
-      return addDays(invoiceDate, 7)
-    case 'Net 14':
-      return addDays(invoiceDate, 14)
-    case 'Net 30':
-      return addDays(invoiceDate, 30)
-    case 'Net 45':
-      return addDays(invoiceDate, 45)
-    case 'Net 60':
-      return addDays(invoiceDate, 60)
-    case 'Custom days':
-      return addDays(invoiceDate, Number(customDays || 0))
-    default:
-      return invoiceDate
-  }
-}
 
 export function AddPayment() {
   const navigate = useNavigate()
@@ -47,14 +19,11 @@ export function AddPayment() {
 
   const [payee, setPayee] = useState('')
   const [amount, setAmount] = useState('')
-  const [invoiceDate, setInvoiceDate] = useState(today)
-  const [terms, setTerms] = useState('Net 14')
-  const [customDays, setCustomDays] = useState('')
+  const [dueDate, setDueDate] = useState(today)
   const [category, setCategory] = useState('')
   const [notes, setNotes] = useState('')
+  const [instructionSent, setInstructionSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-
-  const dueDate = calculateDueDate(invoiceDate, terms, customDays)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -63,11 +32,10 @@ export function AddPayment() {
     await addPayment({
       payee,
       amount: Number(amount),
-      invoice_date: invoiceDate,
       due_date: dueDate,
-      terms,
-      category,
-      notes,
+      category: category || null,
+      notes: notes || null,
+      instruction_sent: instructionSent,
     })
     navigate('/')
   }
@@ -104,76 +72,55 @@ export function AddPayment() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm mb-1">Invoice date</label>
-            <input
-              type="date"
-              value={invoiceDate}
-              onChange={(e) => setInvoiceDate(e.target.value)}
-              className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm mb-1">Due date</label>
-            <input
-              type="date"
-              value={dueDate}
-              readOnly
-              className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm text-slate-300"
-            />
-          </div>
+        <div>
+          <label className="block text-sm mb-1">Due date</label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
+            required
+          />
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Payment terms</label>
+          <label className="block text-sm mb-1">Category</label>
           <select
-            value={terms}
-            onChange={(e) => setTerms(e.target.value)}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
           >
-            {TERMS.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            <option value="">Select...</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
               </option>
             ))}
           </select>
         </div>
 
-        {terms === 'Custom days' && (
-          <div>
-            <label className="block text-sm mb-1">Custom days from invoice</label>
-            <input
-              type="number"
-              min="0"
-              value={customDays}
-              onChange={(e) => setCustomDays(e.target.value)}
-              className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-            />
-          </div>
-        )}
-
         <div>
-          <label className="block text-sm mb-1">Category</label>
+          <label className="block text-sm mb-1">Notes (optional)</label>
           <input
             type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-            placeholder="Rent, software, wages..."
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Notes</label>
-          <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-            rows={3}
+            placeholder="One line"
           />
         </div>
+
+        <label className="flex items-center gap-3 cursor-pointer mt-4">
+          <input
+            type="checkbox"
+            checked={instructionSent}
+            onChange={(e) => setInstructionSent(e.target.checked)}
+            className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent"
+          />
+          <span className="text-sm text-slate-200">
+            Payment instruction sent (e.g. PayNow / Bank Transfer)
+          </span>
+        </label>
 
         <button
           type="submit"
@@ -186,4 +133,3 @@ export function AddPayment() {
     </div>
   )
 }
-

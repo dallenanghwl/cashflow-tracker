@@ -21,6 +21,16 @@ export function AppProvider({ children }) {
     return Number.isNaN(val) ? 0 : val
   }, [settings])
 
+  const currentBalance = useMemo(() => {
+    const received = inflows
+      .filter((i) => i.status === 'Received')
+      .reduce((sum, i) => sum + Number(i.amount || 0), 0)
+    const paid = payments
+      .filter((p) => p.status === 'Paid')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    return openingBalance + received - paid
+  }, [openingBalance, inflows, payments])
+
   const showToast = (message) => {
     setToast({ id: Date.now(), message })
     setTimeout(() => {
@@ -72,14 +82,23 @@ export function AppProvider({ children }) {
   )
 
   const addPayment = async (payload) => {
+    const insertPayload = {
+      payee: payload.payee,
+      amount: payload.amount,
+      due_date: payload.due_date,
+      category: payload.category ?? null,
+      notes: payload.notes ?? null,
+      instruction_sent: payload.instruction_sent ?? false,
+      invoice_date: payload.due_date,
+    }
     const optimistic = {
-      ...payload,
+      ...insertPayload,
       id: `temp-${Date.now()}`,
-      status: payload.status || 'Pending',
+      status: 'Pending',
     }
     setPayments((prev) => [...prev, optimistic])
     showToast('Payment saved')
-    const { data, error: err } = await supabase.from('payments').insert(payload).select('*').single()
+    const { data, error: err } = await supabase.from('payments').insert(insertPayload).select('*').single()
     if (err) {
       console.error(err)
       setPayments((prev) => prev.filter((p) => p.id !== optimistic.id))
@@ -190,6 +209,23 @@ export function AppProvider({ children }) {
       console.error(err)
       setPayments(prev)
       showToast('Could not mark as paid')
+    }
+  }
+
+  const markInstructionSent = async (id) => {
+    const prev = payments
+    setPayments((list) =>
+      list.map((p) => (p.id === id ? { ...p, instruction_sent: true } : p)),
+    )
+    showToast('Instruction marked as sent')
+    const { error: err } = await supabase
+      .from('payments')
+      .update({ instruction_sent: true })
+      .eq('id', id)
+    if (err) {
+      console.error(err)
+      setPayments(prev)
+      showToast('Could not update')
     }
   }
 
@@ -304,6 +340,7 @@ export function AppProvider({ children }) {
     horizonDays,
     setHorizonDays,
     openingBalance,
+    currentBalance,
     upcomingVirtualPayments,
     allOutflows,
     addPayment,
@@ -313,6 +350,7 @@ export function AppProvider({ children }) {
     toggleRecurringActive,
     deleteRecurring,
     markPaymentPaid,
+    markInstructionSent,
     updatePayment,
     deletePayment,
     markInflowReceived,

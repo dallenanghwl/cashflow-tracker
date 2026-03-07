@@ -52,19 +52,19 @@ function formatDateLabel(dateStr) {
 }
 
 export function HealthBanner() {
-  const { openingBalance, payments, inflows, horizonDays } = useAppContext()
+  const { currentBalance, payments, inflows, horizonDays } = useAppContext()
 
   const { status, message, endBalance } = useMemo(() => {
     const confirmedOutflows = payments.filter((p) => p.status !== 'Paid')
     const confirmedInflows = inflows.filter((i) => i.status !== 'Received')
     const { endBalance, minBalance, minDate } = simulateBalance(
-      openingBalance,
+      currentBalance,
       confirmedOutflows,
       confirmedInflows,
       horizonDays,
     )
 
-    const threshold = openingBalance * 0.15
+    const threshold = currentBalance * 0.15
     if (minBalance < 0) {
       return {
         status: 'danger',
@@ -84,7 +84,7 @@ export function HealthBanner() {
       message: "You're all good — you can afford everything in this period.",
       endBalance,
     }
-  }, [openingBalance, payments, inflows, horizonDays])
+  }, [currentBalance, payments, inflows, horizonDays])
 
   const colorClasses =
     status === 'danger'
