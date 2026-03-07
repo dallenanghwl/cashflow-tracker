@@ -14,7 +14,7 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
   const { openingBalance, currentBalance, payments, inflows, allOutflows, horizonDays } = useAppContext()
   const todayStr = new Date().toISOString().slice(0, 10)
 
-  const { outScope, inScope, endBalance } = useMemo(() => {
+  const { outScope, inScope, endBalance, balanceAtEndOfScope } = useMemo(() => {
     const tomorrowStr = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
 
     const outFilter = (p) => {
