@@ -67,9 +67,17 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
         ? "Tomorrow's balance"
         : `After ${scopeDays} days`
   const scopeOutLabel =
-    scope === 'today' ? 'Going out today' : scope === 'tomorrow' ? 'Going out tomorrow' : 'Going out this week'
+    scope === 'today'
+      ? 'Going out today'
+      : scope === 'tomorrow'
+        ? 'Going out tomorrow'
+        : `Going out (next ${scopeDays} days)`
   const scopeInLabel =
-    scope === 'today' ? 'Coming in today' : scope === 'tomorrow' ? 'Coming in tomorrow' : 'Coming in this week'
+    scope === 'today'
+      ? 'Coming in today'
+      : scope === 'tomorrow'
+        ? 'Coming in tomorrow'
+        : `Coming in (next ${scopeDays} days)`
 
   return (
     <section className="grid grid-cols-2 gap-3 mb-5">

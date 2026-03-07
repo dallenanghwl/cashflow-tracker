@@ -103,23 +103,30 @@ export function Overview() {
   }
 
   const scopeForTab = overviewTab === 'today' ? 'today' : overviewTab === 'tomorrow' ? 'tomorrow' : 'week'
-  const scopeDays = 7
+  const scopeDays = overviewTab === 'week' ? horizonDays : 7
 
   const itemsForTab =
     overviewTab === 'today'
       ? buckets.today
       : overviewTab === 'tomorrow'
         ? buckets.tomorrow
-        : [...buckets.today, ...buckets.tomorrow, ...buckets.thisWeek]
+        : [...buckets.today, ...buckets.tomorrow, ...buckets.thisWeek, ...buckets.comingUp]
   const totalForTab =
     overviewTab === 'today'
       ? buckets.totals.today
       : overviewTab === 'tomorrow'
         ? buckets.totals.tomorrow
-        : buckets.totals.today + buckets.totals.tomorrow + buckets.totals.thisWeek
+        : buckets.totals.today +
+          buckets.totals.tomorrow +
+          buckets.totals.thisWeek +
+          buckets.totals.comingUp
   const noItems = itemsForTab.length === 0
   const periodLabel =
-    overviewTab === 'today' ? 'Today' : overviewTab === 'tomorrow' ? 'Tomorrow' : 'This week'
+    overviewTab === 'today'
+      ? 'Today'
+      : overviewTab === 'tomorrow'
+        ? 'Tomorrow'
+        : `Next ${horizonDays} days`
 
   return (
     <div className="pb-4">
@@ -162,9 +169,9 @@ export function Overview() {
             key={d}
             type="button"
             onClick={() => setHorizonDays(d)}
-            className={`flex-1 min-h-[36px] rounded-full text-xs border ${
+            className={`flex-1 min-h-[36px] rounded-full text-xs border font-medium ${
               horizonDays === d
-                ? 'bg-accent/20 text-accent border-accent/50'
+                ? 'bg-accent text-slate-950 border-accent'
                 : 'bg-slate-900 border-slate-700 text-slate-400'
             }`}
           >
