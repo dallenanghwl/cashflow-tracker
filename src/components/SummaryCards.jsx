@@ -41,17 +41,17 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
       .filter(inFilter)
       .reduce((sum, i) => sum + Number(i.amount || 0), 0)
 
-    const endBalance =
-      currentBalance -
-      allOutflows
-        .filter((p) => p.status !== 'Paid' && withinDays(p.due_date, horizonDays))
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0) +
-      inflows
-        .filter((i) => i.status !== 'Received' && withinDays(i.expected_date, horizonDays))
-        .reduce((sum, i) => sum + Number(i.amount || 0), 0)
+    const totalOutInHorizon = allOutflows
+      .filter((p) => p.status !== 'Paid' && withinDays(p.due_date, horizonDays))
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    const totalInInHorizon = inflows
+      .filter((i) => i.status !== 'Received' && withinDays(i.expected_date, horizonDays))
+      .reduce((sum, i) => sum + Number(i.amount || 0), 0)
+    const endBalance = currentBalance - totalOutInHorizon + totalInInHorizon
+    const balanceAtEndOfScope = currentBalance - outScope + inScope
 
-    return { outScope, inScope, endBalance }
-  }, [openingBalance, inflows, allOutflows, horizonDays, scope, scopeDays, todayStr])
+    return { outScope, inScope, endBalance, balanceAtEndOfScope }
+  }, [openingBalance, currentBalance, inflows, allOutflows, horizonDays, scope, scopeDays, todayStr])
 
   const format = (n) =>
     n.toLocaleString(undefined, {
@@ -93,8 +93,12 @@ export function SummaryCards({ scope = 'week', scopeDays = 7 }) {
       </Link>
       <article className="rounded-2xl bg-card px-4 py-3 border border-slate-800">
         <p className="text-xs text-slate-300 mb-1">{scopeBalanceLabel}</p>
-        <p className="font-heading text-2xl">
-          {format(currentBalance - outScope + inScope)}
+        <p
+          className={`font-heading text-2xl ${
+            balanceAtEndOfScope < 0 ? 'text-red-400' : ''
+          }`}
+        >
+          {format(balanceAtEndOfScope)}
         </p>
       </article>
       <article className="rounded-2xl bg-card px-4 py-3 border border-slate-800">

@@ -52,10 +52,10 @@ function formatDateLabel(dateStr) {
 }
 
 export function HealthBanner() {
-  const { currentBalance, payments, inflows, horizonDays } = useAppContext()
+  const { currentBalance, openingBalance, allOutflows, inflows, horizonDays } = useAppContext()
 
   const { status, message, endBalance } = useMemo(() => {
-    const confirmedOutflows = payments.filter((p) => p.status !== 'Paid')
+    const confirmedOutflows = allOutflows.filter((p) => p.status !== 'Paid')
     const confirmedInflows = inflows.filter((i) => i.status !== 'Received')
     const { endBalance, minBalance, minDate } = simulateBalance(
       currentBalance,
@@ -64,15 +64,16 @@ export function HealthBanner() {
       horizonDays,
     )
 
-    const threshold = currentBalance * 0.15
-    if (minBalance < 0) {
+    const threshold = openingBalance * 0.15
+    if (endBalance < 0) {
+      const shortfallAmount = Math.abs(endBalance)
       return {
         status: 'danger',
-        message: `Shortfall coming — your balance goes negative around ${formatDateLabel(minDate)}.`,
+        message: `You will be short by ${shortfallAmount.toLocaleString(undefined, { style: 'currency', currency: 'SGD', maximumFractionDigits: 0 })}`,
         endBalance,
       }
     }
-    if (minBalance < threshold) {
+    if (endBalance < threshold) {
       return {
         status: 'warning',
         message: 'Getting tight — your balance will get close to empty in this period.',
@@ -84,7 +85,7 @@ export function HealthBanner() {
       message: "You're all good — you can afford everything in this period.",
       endBalance,
     }
-  }, [currentBalance, payments, inflows, horizonDays])
+  }, [currentBalance, openingBalance, allOutflows, inflows, horizonDays])
 
   const colorClasses =
     status === 'danger'
@@ -105,15 +106,27 @@ export function HealthBanner() {
       <div className="space-y-1">
         <p className="font-heading text-base">{message}</p>
         <p className="text-sm text-slate-100/90">
-          You&apos;ll have{' '}
-          <span className="font-semibold">
-            {endBalance.toLocaleString(undefined, {
-              style: 'currency',
-              currency: 'SGD',
-              maximumFractionDigits: 0,
-            })}
-          </span>{' '}
-          left at the end of this period.
+          {status === 'danger' ? (
+            <>At the end of this period your balance would be{' '}
+              <span className="font-semibold text-red-200">
+                {endBalance.toLocaleString(undefined, {
+                  style: 'currency',
+                  currency: 'SGD',
+                  maximumFractionDigits: 0,
+                })}
+              </span>.
+              </>
+          ) : (
+            <>You&apos;ll have{' '}
+              <span className="font-semibold">
+                {endBalance.toLocaleString(undefined, {
+                  style: 'currency',
+                  currency: 'SGD',
+                  maximumFractionDigits: 0,
+                })}
+              </span>{' '}
+              left at the end of this period.</>
+          )}
         </p>
       </div>
     </section>
