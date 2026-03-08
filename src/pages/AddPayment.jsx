@@ -21,7 +21,6 @@ export function AddPayment() {
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState(today)
   const [category, setCategory] = useState('')
-  const [notes, setNotes] = useState('')
   const [instructionSent, setInstructionSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -34,7 +33,6 @@ export function AddPayment() {
       amount: Number(amount),
       due_date: dueDate,
       category: category || null,
-      notes: notes || null,
       instruction_sent: instructionSent,
     })
     navigate('/')
@@ -97,17 +95,6 @@ export function AddPayment() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Notes (optional)</label>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-            placeholder="One line"
-          />
         </div>
 
         <label className="flex items-center gap-3 cursor-pointer mt-4">

@@ -17,7 +17,6 @@ export function AddRecurring() {
   const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState('')
   const [category, setCategory] = useState('')
-  const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const isEdit = Boolean(editId)
@@ -34,7 +33,6 @@ export function AddRecurring() {
       setStartDate(rec.start_date || today)
       setEndDate(rec.end_date || '')
       setCategory(rec.category || '')
-      setNotes(rec.notes || '')
     }
   }, [editId, recurring])
 
@@ -53,7 +51,6 @@ export function AddRecurring() {
         ['Monthly', 'Quarterly', 'Yearly'].includes(frequency) && dayOfMonth
           ? Number(dayOfMonth)
           : null,
-      notes: notes || null,
     }
     if (isEdit) {
       await updateRecurring(editId, payload)
@@ -165,16 +162,6 @@ export function AddRecurring() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded-2xl bg-slate-900 border border-slate-700 px-3 py-3 text-sm"
-            rows={3}
           />
         </div>
 

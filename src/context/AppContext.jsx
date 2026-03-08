@@ -87,10 +87,9 @@ export function AppProvider({ children }) {
       amount: payload.amount,
       due_date: payload.due_date,
       category: payload.category ?? null,
-      notes: payload.notes ?? null,
-      instruction_sent: payload.instruction_sent ?? false,
-      invoice_date: payload.due_date,
       status: 'Pending',
+      instruction_sent: payload.instruction_sent ?? false,
+      recurring_id: null,
     }
     const optimistic = {
       ...insertPayload,
@@ -115,14 +114,21 @@ export function AppProvider({ children }) {
   }
 
   const addInflow = async (payload) => {
+    const insertPayload = {
+      description: payload.description ?? '',
+      amount: payload.amount,
+      expected_date: payload.expected_date,
+      category: payload.category ?? null,
+      status: payload.status ?? 'Expected',
+    }
     const optimistic = {
-      ...payload,
+      ...insertPayload,
       id: `temp-${Date.now()}`,
-      status: payload.status || 'Expected',
+      status: payload.status ?? 'Expected',
     }
     setInflows((prev) => [...prev, optimistic])
     showToast('Income saved')
-    const { data, error: err } = await supabase.from('inflows').insert(payload).select('*').single()
+    const { data, error: err } = await supabase.from('inflows').insert(insertPayload).select('*').single()
     if (err) {
       console.error('[Supabase inflows insert]', {
         message: err.message,
@@ -138,14 +144,24 @@ export function AppProvider({ children }) {
   }
 
   const addRecurring = async (payload) => {
+    const insertPayload = {
+      payee: payload.payee,
+      amount: payload.amount,
+      category: payload.category ?? null,
+      frequency: payload.frequency,
+      start_date: payload.start_date,
+      end_date: payload.end_date ?? null,
+      day_of_month: payload.day_of_month ?? null,
+      active: payload.active ?? true,
+    }
     const optimistic = {
-      ...payload,
+      ...insertPayload,
       id: `temp-${Date.now()}`,
-      active: true,
+      active: payload.active ?? true,
     }
     setRecurring((prev) => [...prev, optimistic])
     showToast('Recurring payment saved')
-    const { data, error: err } = await supabase.from('recurring').insert(payload).select('*').single()
+    const { data, error: err } = await supabase.from('recurring').insert(insertPayload).select('*').single()
     if (err) {
       console.error('[Supabase recurring insert]', {
         message: err.message,
@@ -194,7 +210,6 @@ export function AppProvider({ children }) {
         start_date: payload.start_date,
         end_date: payload.end_date ?? null,
         day_of_month: payload.day_of_month ?? null,
-        notes: payload.notes ?? null,
       })
       .eq('id', id)
     if (err) {
@@ -247,13 +262,17 @@ export function AppProvider({ children }) {
 
   const updatePayment = async (id, payload) => {
     const prev = payments
+    const allowed = ['payee', 'amount', 'due_date', 'category', 'instruction_sent', 'recurring_id']
+    const updatePayload = Object.fromEntries(
+      Object.entries(payload).filter(([k]) => allowed.includes(k)),
+    )
     setPayments((list) =>
-      list.map((p) => (p.id === id ? { ...p, ...payload } : p)),
+      list.map((p) => (p.id === id ? { ...p, ...updatePayload } : p)),
     )
     showToast('Payment updated')
     const { error: err } = await supabase
       .from('payments')
-      .update(payload)
+      .update(updatePayload)
       .eq('id', id)
     if (err) {
       console.error(err)
@@ -276,13 +295,17 @@ export function AppProvider({ children }) {
 
   const updateInflow = async (id, payload) => {
     const prev = inflows
+    const allowed = ['description', 'amount', 'expected_date', 'category']
+    const updatePayload = Object.fromEntries(
+      Object.entries(payload).filter(([k]) => allowed.includes(k)),
+    )
     setInflows((list) =>
-      list.map((p) => (p.id === id ? { ...p, ...payload } : p)),
+      list.map((p) => (p.id === id ? { ...p, ...updatePayload } : p)),
     )
     showToast('Inflow updated')
     const { error: err } = await supabase
       .from('inflows')
-      .update(payload)
+      .update(updatePayload)
       .eq('id', id)
     if (err) {
       console.error(err)

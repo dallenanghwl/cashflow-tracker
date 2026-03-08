@@ -37,7 +37,6 @@ export function History() {
       await updatePayment(editing.id, {
         amount: Number(editAmount),
         due_date: editDate,
-        invoice_date: editDate,
         payee: editName,
         category: editCategory || null,
       })
@@ -57,7 +56,7 @@ export function History() {
     const paymentItems = payments.map((p) => ({
       ...p,
       type: 'payment',
-      date: p.due_date || p.invoice_date,
+      date: p.due_date,
     }))
     const inflowItems = inflows.map((i) => ({
       ...i,
