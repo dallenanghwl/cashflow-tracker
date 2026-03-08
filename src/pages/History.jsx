@@ -78,7 +78,7 @@ export function History() {
       all = all.filter((x) => x.type === 'inflow')
     }
 
-    all.sort((a, b) => (a.date < b.date ? 1 : -1))
+    all.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     return all
   }, [payments, inflows, tab])
 

@@ -42,6 +42,12 @@ export function Overview() {
       else if (diff <= horizonDays) comingUp.push(p)
     })
 
+    const sortByDueDateAsc = (a, b) => (a.due_date || '').localeCompare(b.due_date || '')
+    today.sort(sortByDueDateAsc)
+    tomorrow.sort(sortByDueDateAsc)
+    thisWeek.sort(sortByDueDateAsc)
+    comingUp.sort(sortByDueDateAsc)
+
     const total = (list) => list.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 
     return {
