@@ -82,7 +82,9 @@ export function AppProvider({ children }) {
   )
 
   const addPayment = async (payload) => {
+    const id = 'P' + Date.now()
     const insertPayload = {
+      id,
       payee: payload.payee,
       amount: payload.amount,
       due_date: payload.due_date,
@@ -91,11 +93,7 @@ export function AppProvider({ children }) {
       instruction_sent: payload.instruction_sent ?? false,
       recurring_id: null,
     }
-    const optimistic = {
-      ...insertPayload,
-      id: `temp-${Date.now()}`,
-      status: 'Pending',
-    }
+    const optimistic = { ...insertPayload }
     setPayments((prev) => [...prev, optimistic])
     showToast('Payment saved')
     const { data, error: err } = await supabase.from('payments').insert(insertPayload).select('*').single()
@@ -106,26 +104,24 @@ export function AppProvider({ children }) {
         details: err.details,
         fullError: err,
       })
-      setPayments((prev) => prev.filter((p) => p.id !== optimistic.id))
+      setPayments((prev) => prev.filter((p) => p.id !== id))
       showToast('Could not save payment')
       return
     }
-    setPayments((prev) => prev.map((p) => (p.id === optimistic.id ? data : p)))
+    setPayments((prev) => prev.map((p) => (p.id === id ? data : p)))
   }
 
   const addInflow = async (payload) => {
+    const id = 'I' + Date.now()
     const insertPayload = {
+      id,
       description: payload.description ?? '',
       amount: payload.amount,
       expected_date: payload.expected_date,
       category: payload.category ?? null,
       status: payload.status ?? 'Expected',
     }
-    const optimistic = {
-      ...insertPayload,
-      id: `temp-${Date.now()}`,
-      status: payload.status ?? 'Expected',
-    }
+    const optimistic = { ...insertPayload }
     setInflows((prev) => [...prev, optimistic])
     showToast('Income saved')
     const { data, error: err } = await supabase.from('inflows').insert(insertPayload).select('*').single()
@@ -136,15 +132,17 @@ export function AppProvider({ children }) {
         details: err.details,
         fullError: err,
       })
-      setInflows((prev) => prev.filter((p) => p.id !== optimistic.id))
+      setInflows((prev) => prev.filter((p) => p.id !== id))
       showToast('Could not save income')
       return
     }
-    setInflows((prev) => prev.map((p) => (p.id === optimistic.id ? data : p)))
+    setInflows((prev) => prev.map((p) => (p.id === id ? data : p)))
   }
 
   const addRecurring = async (payload) => {
+    const id = 'R' + Date.now()
     const insertPayload = {
+      id,
       payee: payload.payee,
       amount: payload.amount,
       category: payload.category ?? null,
@@ -154,11 +152,7 @@ export function AppProvider({ children }) {
       day_of_month: payload.day_of_month ?? null,
       active: payload.active ?? true,
     }
-    const optimistic = {
-      ...insertPayload,
-      id: `temp-${Date.now()}`,
-      active: payload.active ?? true,
-    }
+    const optimistic = { ...insertPayload }
     setRecurring((prev) => [...prev, optimistic])
     showToast('Recurring payment saved')
     const { data, error: err } = await supabase.from('recurring').insert(insertPayload).select('*').single()
@@ -169,11 +163,11 @@ export function AppProvider({ children }) {
         details: err.details,
         fullError: err,
       })
-      setRecurring((prev) => prev.filter((r) => r.id !== optimistic.id))
+      setRecurring((prev) => prev.filter((r) => r.id !== id))
       showToast('Could not save recurring payment')
       return
     }
-    setRecurring((prev) => prev.map((r) => (r.id === optimistic.id ? data : r)))
+    setRecurring((prev) => prev.map((r) => (r.id === id ? data : r)))
   }
 
   const toggleRecurringActive = async (recurringId, nextActive) => {
