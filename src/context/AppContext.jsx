@@ -90,6 +90,7 @@ export function AppProvider({ children }) {
       notes: payload.notes ?? null,
       instruction_sent: payload.instruction_sent ?? false,
       invoice_date: payload.due_date,
+      status: 'Pending',
     }
     const optimistic = {
       ...insertPayload,
@@ -100,7 +101,12 @@ export function AppProvider({ children }) {
     showToast('Payment saved')
     const { data, error: err } = await supabase.from('payments').insert(insertPayload).select('*').single()
     if (err) {
-      console.error(err)
+      console.error('[Supabase payments insert]', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        fullError: err,
+      })
       setPayments((prev) => prev.filter((p) => p.id !== optimistic.id))
       showToast('Could not save payment')
       return
@@ -118,7 +124,12 @@ export function AppProvider({ children }) {
     showToast('Income saved')
     const { data, error: err } = await supabase.from('inflows').insert(payload).select('*').single()
     if (err) {
-      console.error(err)
+      console.error('[Supabase inflows insert]', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        fullError: err,
+      })
       setInflows((prev) => prev.filter((p) => p.id !== optimistic.id))
       showToast('Could not save income')
       return
@@ -136,7 +147,12 @@ export function AppProvider({ children }) {
     showToast('Recurring payment saved')
     const { data, error: err } = await supabase.from('recurring').insert(payload).select('*').single()
     if (err) {
-      console.error(err)
+      console.error('[Supabase recurring insert]', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        fullError: err,
+      })
       setRecurring((prev) => prev.filter((r) => r.id !== optimistic.id))
       showToast('Could not save recurring payment')
       return
