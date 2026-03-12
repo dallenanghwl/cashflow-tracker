@@ -2,16 +2,13 @@ import { useMemo, useState } from 'react'
 import { useAppContext } from '../context/AppContext.jsx'
 import { PaymentCard } from '../components/PaymentCard.jsx'
 
-const TABS = ['All', 'Pending', 'Paid', 'Inflows']
+const TABS = ['All', 'Pending', 'Paid']
 
 export function History() {
   const {
     payments,
-    inflows,
     updatePayment,
     deletePayment,
-    updateInflow,
-    deleteInflow,
   } = useAppContext()
   const [tab, setTab] = useState('All')
   const [editing, setEditing] = useState(null)
@@ -24,8 +21,8 @@ export function History() {
   const openEdit = (item) => {
     setEditing(item)
     setEditAmount(String(item.amount ?? ''))
-    setEditDate(item.due_date || item.expected_date || '')
-    setEditName(item.type === 'inflow' ? (item.description || '') : (item.payee || ''))
+    setEditDate(item.due_date || '')
+    setEditName(item.payee || '')
     setEditCategory(item.category || '')
   }
 
@@ -33,21 +30,12 @@ export function History() {
     e.preventDefault()
     if (!editing) return
     setEditSubmitting(true)
-    if (editing.type === 'payment') {
-      await updatePayment(editing.id, {
-        amount: Number(editAmount),
-        due_date: editDate,
-        payee: editName,
-        category: editCategory || null,
-      })
-    } else {
-      await updateInflow(editing.id, {
-        amount: Number(editAmount),
-        expected_date: editDate,
-        description: editName,
-        category: editCategory || null,
-      })
-    }
+    await updatePayment(editing.id, {
+      amount: Number(editAmount),
+      due_date: editDate,
+      payee: editName,
+      category: editCategory || null,
+    })
     setEditing(null)
     setEditSubmitting(false)
   }
@@ -58,29 +46,17 @@ export function History() {
       type: 'payment',
       date: p.due_date,
     }))
-    const inflowItems = inflows.map((i) => ({
-      ...i,
-      type: 'inflow',
-      date: i.expected_date,
-    }))
-
-    let all = [...paymentItems, ...inflowItems].filter((x) => x.date)
+    let all = paymentItems.filter((x) => x.date)
 
     if (tab === 'Pending') {
-      all = all.filter(
-        (x) =>
-          (x.type === 'payment' && x.status !== 'Paid') ||
-          (x.type === 'inflow' && x.status !== 'Received'),
-      )
+      all = all.filter((x) => x.status !== 'Paid')
     } else if (tab === 'Paid') {
-      all = all.filter((x) => x.status === 'Paid' || x.status === 'Received')
-    } else if (tab === 'Inflows') {
-      all = all.filter((x) => x.type === 'inflow')
+      all = all.filter((x) => x.status === 'Paid')
     }
 
     all.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     return all
-  }, [payments, inflows, tab])
+  }, [payments, tab])
 
   return (
     <div>
@@ -143,9 +119,7 @@ export function History() {
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="font-heading text-lg mb-2">
-              Edit {editing.type === 'inflow' ? 'inflow' : 'payment'}
-            </h2>
+            <h2 className="font-heading text-lg mb-2">Edit payment</h2>
             <form onSubmit={handleSaveEdit} className="space-y-3">
               <div>
                 <label className="block text-sm mb-1">Amount</label>

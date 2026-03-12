@@ -25,19 +25,6 @@ function friendlyDateLabel(dateStr) {
 }
 
 function PaymentStatusBadge({ payment, asInflow }) {
-  if (asInflow) {
-    const received = payment.status === 'Received'
-    return (
-      <span
-        className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
-          received ? 'bg-emerald-900/80 text-emerald-100' : 'bg-slate-700 text-slate-200'
-        }`}
-      >
-        {received ? '🟢 Received' : 'Pending'}
-      </span>
-    )
-  }
-
   const isPaid = payment.status === 'Paid'
   const instructionSent = payment.instruction_sent === true
 
@@ -64,7 +51,6 @@ function PaymentStatusBadge({ payment, asInflow }) {
 
 export function PaymentCard({
   payment,
-  asInflow = false,
   onEdit,
   onDelete,
   showHistoryActions = false,
@@ -73,22 +59,18 @@ export function PaymentCard({
     markPaymentPaid,
     markInstructionSent,
     deletePayment,
-    markInflowReceived,
+    markPaymentPending,
   } = useAppContext()
 
-  const label = useMemo(
-    () => friendlyDateLabel(payment.due_date || payment.expected_date),
-    [payment],
-  )
+  const label = useMemo(() => friendlyDateLabel(payment.due_date), [payment])
 
   const amount = Number(payment.amount || 0)
-  const isPaid = payment.status === 'Paid' || payment.status === 'Received'
+  const isPaid = payment.status === 'Paid'
   const isVirtual = payment.virtual === true
 
   const handleMarkPaid = () => {
     if (isPaid) return
-    if (asInflow) markInflowReceived(payment.id)
-    else markPaymentPaid(payment.id)
+    markPaymentPaid(payment.id)
   }
 
   const handleMarkInstructionSent = () => {
@@ -97,18 +79,18 @@ export function PaymentCard({
 
   const handleDelete = () => {
     if (onDelete) onDelete()
-    else if (!asInflow && !isVirtual) deletePayment(payment.id)
+    else if (!isVirtual) deletePayment(payment.id)
   }
 
   const showInstructionButton =
-    !asInflow && !isPaid && !isVirtual && payment.instruction_sent !== true
+    !isPaid && !isVirtual && payment.instruction_sent !== true
 
   return (
     <article className="rounded-2xl bg-card border border-slate-800 px-4 py-3 mb-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="font-heading text-lg leading-tight">
-            {asInflow ? payment.description : payment.payee}
+            {payment.payee}
           </p>
           <p className="text-xs text-slate-300">{label}</p>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -127,10 +109,10 @@ export function PaymentCard({
         </div>
         <p
           className={`font-heading text-2xl ${
-            asInflow ? 'text-emerald-400' : 'text-red-400'
+            'text-red-400'
           }`}
         >
-          {asInflow ? '+' : '-'}
+          -
           {amount.toLocaleString(undefined, {
             style: 'currency',
             currency: 'SGD',
@@ -151,7 +133,7 @@ export function PaymentCard({
                 Edit
               </button>
             )}
-            {(onDelete || (!asInflow && !isVirtual)) && (
+            {(onDelete || !isVirtual) && (
               <button
                 type="button"
                 onClick={handleDelete}
@@ -160,21 +142,15 @@ export function PaymentCard({
                 Delete
               </button>
             )}
-          </>
-        ) : asInflow ? (
-          <>
-            <button
-              type="button"
-              onClick={handleMarkPaid}
-              disabled={isPaid}
-              className={`flex-1 min-h-[48px] rounded-2xl text-sm font-semibold ${
-                isPaid
-                  ? 'bg-slate-700 text-slate-300 cursor-default'
-                  : 'bg-emerald-500 text-slate-950 active:scale-[0.99]'
-              }`}
-            >
-              ✓ Mark as received
-            </button>
+            {payment.status === 'Paid' && (
+              <button
+                type="button"
+                onClick={() => markPaymentPending(payment.id)}
+                className="min-h-[48px] rounded-2xl bg-slate-700 text-slate-100 text-xs font-semibold px-4 border border-slate-500"
+              >
+                Mark as unpaid
+              </button>
+            )}
           </>
         ) : (
           <>

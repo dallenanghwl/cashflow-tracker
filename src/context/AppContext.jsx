@@ -6,7 +6,6 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [payments, setPayments] = useState([])
-  const [inflows, setInflows] = useState([])
   const [recurring, setRecurring] = useState([])
   const [settings, setSettings] = useState([])
   const [loadingInitial, setLoadingInitial] = useState(true)
@@ -22,40 +21,39 @@ export function AppProvider({ children }) {
   }, [settings])
 
   const currentBalance = useMemo(() => {
-    const received = inflows
-      .filter((i) => i.status === 'Received')
-      .reduce((sum, i) => sum + Number(i.amount || 0), 0)
     const paid = payments
       .filter((p) => p.status === 'Paid')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0)
-    return openingBalance + received - paid
-  }, [openingBalance, inflows, payments])
+    return openingBalance - paid
+  }, [openingBalance, payments])
 
-  const showToast = (message) => {
-    setToast({ id: Date.now(), message })
+  const showToast = (options) => {
+    const id = Date.now()
+    const payload =
+      typeof options === 'string'
+        ? { id, message: options }
+        : { id, durationMs: 2500, ...options }
+    setToast(payload)
     setTimeout(() => {
-      setToast((current) => (current && current.id === message.id ? null : null))
-    }, 2500)
+      setToast((current) => (current && current.id === id ? null : current))
+    }, payload.durationMs)
   }
 
   const loadAll = async () => {
     setLoading(true)
     setError(null)
     try {
-      const [paymentsRes, inflowsRes, recurringRes, settingsRes] = await Promise.all([
+      const [paymentsRes, recurringRes, settingsRes] = await Promise.all([
         supabase.from('payments').select('*').order('due_date'),
-        supabase.from('inflows').select('*').order('expected_date'),
         supabase.from('recurring').select('*').order('created_at'),
         supabase.from('settings').select('*'),
       ])
 
       if (paymentsRes.error) throw paymentsRes.error
-      if (inflowsRes.error) throw inflowsRes.error
       if (recurringRes.error) throw recurringRes.error
       if (settingsRes.error) throw settingsRes.error
 
       setPayments(paymentsRes.data || [])
-      setInflows(inflowsRes.data || [])
       setRecurring(recurringRes.data || [])
       setSettings(settingsRes.data || [])
     } catch (e) {
@@ -109,34 +107,6 @@ export function AppProvider({ children }) {
       return
     }
     setPayments((prev) => prev.map((p) => (p.id === id ? data : p)))
-  }
-
-  const addInflow = async (payload) => {
-    const id = 'I' + Date.now()
-    const insertPayload = {
-      id,
-      description: payload.description ?? '',
-      amount: payload.amount,
-      expected_date: payload.expected_date,
-      category: payload.category ?? null,
-      status: payload.status ?? 'Expected',
-    }
-    const optimistic = { ...insertPayload }
-    setInflows((prev) => [...prev, optimistic])
-    showToast('Income saved')
-    const { data, error: err } = await supabase.from('inflows').insert(insertPayload).select('*').single()
-    if (err) {
-      console.error('[Supabase inflows insert]', {
-        message: err.message,
-        code: err.code,
-        details: err.details,
-        fullError: err,
-      })
-      setInflows((prev) => prev.filter((p) => p.id !== id))
-      showToast('Could not save income')
-      return
-    }
-    setInflows((prev) => prev.map((p) => (p.id === id ? data : p)))
   }
 
   const addRecurring = async (payload) => {
@@ -225,10 +195,33 @@ export function AppProvider({ children }) {
     }
   }
 
+  const markPaymentPending = async (id) => {
+    const prev = payments
+    setPayments((list) =>
+      list.map((p) => (p.id === id ? { ...p, status: 'Pending' } : p)),
+    )
+    const { error: err } = await supabase
+      .from('payments')
+      .update({ status: 'Pending' })
+      .eq('id', id)
+    if (err) {
+      console.error(err)
+      setPayments(prev)
+      showToast('Could not revert payment')
+    }
+  }
+
   const markPaymentPaid = async (id) => {
     const prev = payments
     setPayments((list) => list.map((p) => (p.id === id ? { ...p, status: 'Paid' } : p)))
-    showToast('Marked as paid')
+    showToast({
+      message: 'Payment marked as paid',
+      actionLabel: 'UNDO',
+      durationMs: 10000,
+      onAction: () => {
+        markPaymentPending(id)
+      },
+    })
     const { error: err } = await supabase.from('payments').update({ status: 'Paid' }).eq('id', id)
     if (err) {
       console.error(err)
@@ -287,57 +280,16 @@ export function AppProvider({ children }) {
     }
   }
 
-  const updateInflow = async (id, payload) => {
-    const prev = inflows
-    const allowed = ['description', 'amount', 'expected_date', 'category']
-    const updatePayload = Object.fromEntries(
-      Object.entries(payload).filter(([k]) => allowed.includes(k)),
-    )
-    setInflows((list) =>
-      list.map((p) => (p.id === id ? { ...p, ...updatePayload } : p)),
-    )
-    showToast('Inflow updated')
-    const { error: err } = await supabase
-      .from('inflows')
-      .update(updatePayload)
-      .eq('id', id)
-    if (err) {
-      console.error(err)
-      setInflows(prev)
-      showToast('Could not update inflow')
-    }
-  }
-
-  const deleteInflow = async (id) => {
-    const prev = inflows
-    setInflows((list) => list.filter((p) => p.id !== id))
-    showToast('Inflow deleted')
-    const { error: err } = await supabase.from('inflows').delete().eq('id', id)
-    if (err) {
-      console.error(err)
-      setInflows(prev)
-      showToast('Could not delete inflow')
-    }
-  }
-
-  const markInflowReceived = async (id) => {
-    const prev = inflows
-    setInflows((list) => list.map((p) => (p.id === id ? { ...p, status: 'Received' } : p)))
-    showToast('Marked as received')
-    const { error: err } = await supabase.from('inflows').update({ status: 'Received' }).eq('id', id)
-    if (err) {
-      console.error(err)
-      setInflows(prev)
-      showToast('Could not mark as received')
-    }
-  }
-
   const saveOpeningBalance = async (value) => {
     const nextValue = String(value ?? '0')
     const prev = settings
     const existing = settings.find((s) => s.key === 'opening_balance')
     if (existing) {
-      setSettings((all) => all.map((s) => (s.key === 'opening_balance' ? { ...s, value: nextValue } : s)))
+      setSettings((all) =>
+        all.map((s) =>
+          s.key === 'opening_balance' ? { ...s, value: nextValue } : s,
+        ),
+      )
       const { error: err } = await supabase
         .from('settings')
         .update({ value: nextValue })
@@ -359,12 +311,30 @@ export function AppProvider({ children }) {
         return
       }
     }
-    showToast('Opening balance saved')
+    // Record last-updated time for bank balance
+    const timestamp = new Date().toISOString()
+    const existingUpdatedAt = settings.find((s) => s.key === 'opening_balance_updated_at')
+    if (existingUpdatedAt) {
+      setSettings((all) =>
+        all.map((s) =>
+          s.key === 'opening_balance_updated_at' ? { ...s, value: timestamp } : s,
+        ),
+      )
+      await supabase
+        .from('settings')
+        .update({ value: timestamp })
+        .eq('key', 'opening_balance_updated_at')
+    } else {
+      const optimistic = { key: 'opening_balance_updated_at', value: timestamp }
+      setSettings((all) => [...all, optimistic])
+      await supabase.from('settings').insert(optimistic)
+    }
+
+    showToast('Bank balance saved')
   }
 
   const value = {
     payments,
-    inflows,
     recurring,
     settings,
     loading,
@@ -377,7 +347,6 @@ export function AppProvider({ children }) {
     upcomingVirtualPayments,
     allOutflows,
     addPayment,
-    addInflow,
     addRecurring,
     updateRecurring,
     toggleRecurringActive,
@@ -386,10 +355,8 @@ export function AppProvider({ children }) {
     markInstructionSent,
     updatePayment,
     deletePayment,
-    markInflowReceived,
-    updateInflow,
-    deleteInflow,
     saveOpeningBalance,
+    markPaymentPending,
     reload: loadAll,
     toast,
     showToast,
