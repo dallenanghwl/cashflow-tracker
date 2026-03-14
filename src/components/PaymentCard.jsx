@@ -104,7 +104,7 @@ export function PaymentCard({
                 ↻ Recurring
               </span>
             )}
-            <PaymentStatusBadge payment={payment} asInflow={asInflow} />
+            <PaymentStatusBadge payment={payment} />
           </div>
         </div>
         <p
